@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Printer Camera</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1217;
+        --panel: #111a21;
+        --line: #22303a;
+        --text: #e9f2f7;
+        --muted: #9db2be;
+        --good: #7ee3a6;
+        --warn: #ffd166;
+        --bad: #ff7d7d;
+        --accent: #4db7ff;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #17232b 0, var(--bg) 45%);
+        color: var(--text);
+      }
+
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .card {
+        background: rgba(17, 26, 33, 0.92);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+      }
+
+      .header {
+        padding: 18px 20px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.35rem, 2.5vw, 2rem);
+      }
+
+      .sub {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .stream {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        background: #000;
+      }
+
+      .stream img,
+      .stream video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(0,0,0,0.45);
+        font-weight: 700;
+      }
+
+      .badge.good { color: var(--good); }
+      .badge.warn { color: var(--warn); }
+      .badge.bad { color: var(--bad); }
+
+      .grid {
+        padding: 18px 20px 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        padding: 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.03);
+      }
+
+      .label {
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+      }
+
+      .value {
+        margin-top: 8px;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+
+      .actions {
+        padding: 0 20px 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      button {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 14px;
+        background: #15212a;
+        color: var(--text);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .discord { border-color: rgba(77, 183, 255, 0.4); }
+      .teams { border-color: rgba(100, 153, 255, 0.4); }
+      .clear { border-color: rgba(255, 209, 102, 0.35); }
+
+      .note {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .settings {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .settings-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .settings-group label {
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .settings-group input {
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(17, 26, 33, 0.6);
+        color: var(--text);
+        font-family: monospace;
+        font-size: 0.9rem;
+      }
+
+      .settings-group input:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: rgba(17, 26, 33, 0.9);
+      }
+
+      .crop-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .crop-grid .settings-group label {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .crop-grid input[type=range] {
+        width: 100%;
+        accent-color: var(--accent);
+        background: transparent;
+        border: none;
+        padding: 6px 0;
+      }
+
+      .settings-divider {
+        border: none;
+        border-top: 1px solid var(--line);
+        margin: 4px 0;
+      }
+
+      .settings-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn-save {
+        border-color: rgba(126, 227, 166, 0.4) !important;
+        flex: 1;
+      }
+
+      .btn-cancel {
+        border-color: rgba(255, 125, 125, 0.4) !important;
+        flex: 1;
+      }
+
+      @media (max-width: 640px) {
+        .wrap { padding: 12px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card header">
+        <h1>3D Printer Camera</h1>
+        <p class="sub">low-latency camera stream for both this Web UI and Fluidd.</p>
+      </section>
+
+      <section class="card">
+        <div class="stream">
+          <img id="cameraStream" src="/stream.mjpg" alt="Live printer camera" />
+          <div id="statusBadge" class="badge warn">Starting stream...</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="grid">
+          <div class="metric"><div class="label">Camera</div><div id="cameraState" class="value">Checking...</div></div>
+          <div class="metric"><div class="label">Resolution</div><div id="resolution" class="value">-</div></div>
+          <div class="metric"><div class="label">FPS</div><div id="fps" class="value">-</div></div>
+          <div class="metric"><div class="label">Printer State</div><div id="printerState" class="value">-</div></div>
+          <div class="metric"><div class="label">File</div><div id="printerFile" class="value">-</div></div>
+          <div class="metric"><div class="label">Progress</div><div id="printerProgress" class="value">-</div></div>
+          <div class="metric"><div class="label">Remaining</div><div id="remaining" class="value">-</div></div>
+          <div class="metric"><div class="label">Dropped Frames</div><div id="drops" class="value">0</div></div>
+        </div>
+
+        <div class="actions">
+          <button id="btnDiscord" class="discord" type="button">Test Discord</button>
+          <button id="btnTeams" class="teams" type="button">Test Teams</button>
+          <button id="btnPrintStarted" class="discord" type="button">Test Print Started</button>
+          <button id="btnSettings" class="discord" type="button">Settings</button>
+          <button id="btnClear" class="clear" type="button" style="display:none">Dismiss Alert</button>
+          <span id="note" class="note">Use /stream.mjpg in Fluidd for the same camera feed.</span>
+        </div>
+      </section>
+
+      <section id="settingsSection" class="card" style="display:none">
+        <div class="header">
+          <h1>Settings</h1>
+        </div>
+        <div style="padding: 0 20px 20px">
+          <div class="settings">
+            <div class="settings-group">
+              <label for="moonrakerUrl">Moonraker URL (Printer)</label>
+              <input id="moonrakerUrl" type="text" placeholder="http://192.168.1.100:7125">
+            </div>
+            <div class="settings-group">
+              <label for="discordWebhook">Discord Webhook URL</label>
+              <input id="discordWebhook" type="password" placeholder="https://discord.com/api/webhooks/...">
+            </div>
+            <div class="settings-group">
+              <label for="teamsWebhook">Microsoft Teams Webhook URL</label>
+              <input id="teamsWebhook" type="password" placeholder="https://prod-xx.westus.logic.azure.com/...">
+            </div>
+
+            <hr class="settings-divider">
+
+            <div class="settings-group">
+              <label>Camera Crop <span class="note" style="text-transform:none;letter-spacing:0">(px removed from each edge — updates live)</span></label>
+              <div class="crop-grid">
+                <div class="settings-group">
+                  <label for="cropTop">Top &nbsp;<span id="cropTopVal">0</span>px</label>
+                  <input id="cropTop" type="range" min="0" max="400" step="10" value="0">
+                </div>
+                <div class="settings-group">
+                  <label for="cropBottom">Bottom &nbsp;<span id="cropBottomVal">0</span>px</label>
+                  <input id="cropBottom" type="range" min="0" max="400" step="10" value="0">
+                </div>
+                <div class="settings-group">
+                  <label for="cropLeft">Left &nbsp;<span id="cropLeftVal">0</span>px</label>
+                  <input id="cropLeft" type="range" min="0" max="640" step="10" value="0">
+                </div>
+                <div class="settings-group">
+                  <label for="cropRight">Right &nbsp;<span id="cropRightVal">0</span>px</label>
+                  <input id="cropRight" type="range" min="0" max="640" step="10" value="0">
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-actions">
+              <button id="btnSaveSettings" class="btn-save" type="button">Save Settings</button>
+              <button id="btnCancelSettings" class="btn-cancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const els = {
+        badge: document.getElementById("statusBadge"),
+        cameraState: document.getElementById("cameraState"),
+        resolution: document.getElementById("resolution"),
+        fps: document.getElementById("fps"),
+        printerState: document.getElementById("printerState"),
+        printerFile: document.getElementById("printerFile"),
+        printerProgress: document.getElementById("printerProgress"),
+        remaining: document.getElementById("remaining"),
+        drops: document.getElementById("drops"),
+        note: document.getElementById("note"),
+        clear: document.getElementById("btnClear"),
+        discord: document.getElementById("btnDiscord"),
+        teams: document.getElementById("btnTeams"),
+        printStarted: document.getElementById("btnPrintStarted"),
+        settings: document.getElementById("btnSettings"),
+        settingsSection: document.getElementById("settingsSection"),
+        moonrakerUrl: document.getElementById("moonrakerUrl"),
+        discordWebhook: document.getElementById("discordWebhook"),
+        teamsWebhook: document.getElementById("teamsWebhook"),
+        saveSettings: document.getElementById("btnSaveSettings"),
+        cancelSettings: document.getElementById("btnCancelSettings"),
+        stream: document.getElementById("cameraStream"),
+        cropTop: document.getElementById("cropTop"),
+        cropBottom: document.getElementById("cropBottom"),
+        cropLeft: document.getElementById("cropLeft"),
+        cropRight: document.getElementById("cropRight"),
+        cropTopVal: document.getElementById("cropTopVal"),
+        cropBottomVal: document.getElementById("cropBottomVal"),
+        cropLeftVal: document.getElementById("cropLeftVal"),
+        cropRightVal: document.getElementById("cropRightVal"),
+      };
+
+      function formatTime(seconds) {
+        const value = Number(seconds);
+        if (!Number.isFinite(value) || value <= 0) return "-";
+        const h = Math.floor(value / 3600);
+        const m = Math.floor((value % 3600) / 60);
+        const s = Math.floor(value % 60);
+        if (h > 0) return `${h}h ${m}m`;
+        if (m > 0) return `${m}m ${s}s`;
+        return `${s}s`;
+      }
+
+      async function refreshStatus() {
+        try {
+          const response = await fetch("/status", { cache: "no-store" });
+          const data = await response.json();
+
+          els.cameraState.textContent = data.online ? "Online" : "Offline";
+          els.resolution.textContent = data.width && data.height ? `${data.width} x ${data.height}` : "-";
+          els.fps.textContent = data.fps > 0 ? data.fps.toFixed(1) : "-";
+          els.drops.textContent = String(data.dropped_frames ?? 0);
+
+          if (data.online) {
+            els.badge.textContent = data.alert ? data.alert_reason : "Live";
+            els.badge.className = `badge ${data.alert ? "bad" : "good"}`;
+          } else {
+            els.badge.textContent = "Camera offline";
+            els.badge.className = "badge bad";
+          }
+
+          els.clear.style.display = data.alert ? "inline-block" : "none";
+        } catch {
+          els.badge.textContent = "Status unavailable";
+          els.badge.className = "badge warn";
+        }
+      }
+
+      async function refreshPrinter() {
+        try {
+          const response = await fetch("/printer", { cache: "no-store" });
+          const data = await response.json();
+
+          if (!data.connected) {
+            els.printerState.textContent = "Offline";
+            els.printerFile.textContent = "-";
+            els.printerProgress.textContent = "-";
+            els.remaining.textContent = "-";
+            els.note.textContent = "Set MOONRAKER_URL to show printer status in this page.";
+            return;
+          }
+
+          els.printerState.textContent = String(data.state || "unknown").toUpperCase();
+          els.printerFile.textContent = data.filename || "-";
+          els.printerProgress.textContent = `${data.progress ?? 0}%`;
+          els.remaining.textContent = formatTime(data.remaining_s);
+          els.note.textContent = "Fluidd can use /stream.mjpg for the same low-latency camera feed.";
+        } catch {
+          els.printerState.textContent = "Error";
+        }
+      }
+
+      async function dismissAlert() {
+        try {
+          await fetch("/clear_alert", { method: "POST" });
+        } catch {}
+        els.clear.style.display = "none";
+      }
+
+      async function testDiscord() {
+        els.discord.disabled = true;
+        try {
+          const response = await fetch("/test_discord", { method: "POST" });
+          const data = await response.json();
+          els.note.textContent = response.ok && data.ok ? "Discord test notification sent" : (data.reason || "Discord test failed");
+        } catch {
+          els.note.textContent = "Discord test failed";
+        } finally {
+          els.discord.disabled = false;
+        }
+      }
+
+      async function testTeams() {
+        els.teams.disabled = true;
+        try {
+          const response = await fetch("/test_teams", { method: "POST" });
+          const data = await response.json();
+          els.note.textContent = response.ok && data.ok ? "Teams test notification sent" : (data.reason || "Teams test failed");
+        } catch {
+          els.note.textContent = "Teams test failed";
+        } finally {
+          els.teams.disabled = false;
+        }
+      }
+
+      async function testPrintStarted() {
+        els.printStarted.disabled = true;
+        try {
+          const response = await fetch("/test_print_started", { method: "POST" });
+          const data = await response.json();
+          els.note.textContent = response.ok && data.ok ? "Print started test notification sent" : (data.reason || "Print started test failed");
+        } catch {
+          els.note.textContent = "Print started test failed";
+        } finally {
+          els.printStarted.disabled = false;
+        }
+      }
+
+      function applyCropSlider(key, valEl, slider) {
+        valEl.textContent = slider.value;
+        fetch("/crop", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            crop_top: parseInt(els.cropTop.value),
+            crop_bottom: parseInt(els.cropBottom.value),
+            crop_left: parseInt(els.cropLeft.value),
+            crop_right: parseInt(els.cropRight.value),
+          }),
+        }).catch(() => {});
+      }
+
+      ["cropTop","cropBottom","cropLeft","cropRight"].forEach(id => {
+        const slider = els[id];
+        const valEl = els[id + "Val"];
+        slider.addEventListener("input", () => applyCropSlider(id, valEl, slider));
+      });
+
+      async function showSettings() {
+        els.settingsSection.style.display = "block";
+        try {
+          const response = await fetch("/settings", { cache: "no-store" });
+          const data = await response.json();
+          els.moonrakerUrl.value = data.moonraker_url || "";
+          els.discordWebhook.value = data.discord_webhook || "";
+          els.teamsWebhook.value = data.teams_webhook || "";
+          els.cropTop.value = data.crop_top ?? 0;
+          els.cropBottom.value = data.crop_bottom ?? 0;
+          els.cropLeft.value = data.crop_left ?? 0;
+          els.cropRight.value = data.crop_right ?? 0;
+          els.cropTopVal.textContent = els.cropTop.value;
+          els.cropBottomVal.textContent = els.cropBottom.value;
+          els.cropLeftVal.textContent = els.cropLeft.value;
+          els.cropRightVal.textContent = els.cropRight.value;
+        } catch {
+          els.note.textContent = "Failed to load settings";
+        }
+      }
+
+      async function hideSettings() {
+        els.settingsSection.style.display = "none";
+      }
+
+      async function saveSettings() {
+        els.saveSettings.disabled = true;
+        try {
+          const response = await fetch("/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              moonraker_url: els.moonrakerUrl.value,
+              discord_webhook: els.discordWebhook.value,
+              teams_webhook: els.teamsWebhook.value,
+              crop_top: parseInt(els.cropTop.value),
+              crop_bottom: parseInt(els.cropBottom.value),
+              crop_left: parseInt(els.cropLeft.value),
+              crop_right: parseInt(els.cropRight.value),
+            }),
+          });
+          const data = await response.json();
+          if (response.ok && data.ok) {
+            els.note.textContent = "Settings saved. The app will use the new settings.";
+            hideSettings();
+          } else {
+            els.note.textContent = data.reason || "Failed to save settings";
+          }
+        } catch {
+          els.note.textContent = "Failed to save settings";
+        } finally {
+          els.saveSettings.disabled = false;
+        }
+      }
+
+      els.clear.addEventListener("click", dismissAlert);
+      els.discord.addEventListener("click", testDiscord);
+      els.teams.addEventListener("click", testTeams);
+      els.printStarted.addEventListener("click", testPrintStarted);
+      els.settings.addEventListener("click", showSettings);
+      els.cancelSettings.addEventListener("click", hideSettings);
+      els.saveSettings.addEventListener("click", saveSettings);
+
+      refreshStatus();
+      refreshPrinter();
+      setInterval(refreshStatus, 2500);
+      setInterval(refreshPrinter, 6000);
+    </script>
+  </body>
+</html>

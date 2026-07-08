@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pgrep -a python && echo \"---env check---\" && grep DISCORD ~/.bashrc)",
+      "Read(//home/viper2990/**)",
+      "Bash(kill 1519)",
+      "Bash(kill 2682)",
+      "Skill(code-review)",
+      "Skill(code-review:*)",
+      "Bash(pkill -f \"python app.py\")",
+      "Bash(kill 15834)",
+      "Bash(cat /tmp/monitor.log)",
+      "Read(//tmp/**)",
+      "Bash(sleep 3 && cat /tmp/monitor.log)",
+      "Bash(bash start_monitor.sh)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(sleep 4 && cat /tmp/monitor.log)",
+      "Bash(fuser -k 8080/tcp)",
+      "Bash(sleep 5 && cat /tmp/monitor.log)"
+    ]
+  }
+}

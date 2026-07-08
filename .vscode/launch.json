@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Start Monitor (Camera 0)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.py",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "console": "integratedTerminal",
+      "env": {
+        "CAMERA_INDEX": "0",
+        "CAMERA_WIDTH": "1920",
+        "CAMERA_HEIGHT": "1080",
+        "CAMERA_FPS": "30",
+        "CAMERA_CROP_TOP": "0",
+        "CAMERA_CROP_BOTTOM": "270",
+        "CAMERA_CROP_LEFT": "0",
+        "CAMERA_CROP_RIGHT": "0",
+        "CAMERA_STABILIZE": "true",
+        "CAMERA_STABILIZE_SCALE": "0.25",
+        "CAMERA_STABILIZE_SMOOTHING": "0.90",
+        "CAMERA_STABILIZE_MAX_SHIFT": "8",
+        "CAMERA_STABILIZE_EVERY": "2",
+        "CAMERA_STABILIZE_DEADBAND": "0.45",
+        "CAMERA_STABILIZE_PRESERVE_FPS": "true",
+        "CAMERA_STABILIZE_MIN_FPS": "24",
+        "CAMERA_AUTOFOCUS": "false",
+        "CAMERA_FOCUS": "0",
+        "CAMERA_JPEG_QUALITY": "88",
+        "CAMERA_JPEG_QUALITY_FLOOR": "75",
+        "CAMERA_JPEG_PRESERVE_FPS": "true",
+        "CAMERA_JPEG_MIN_FPS": "24",
+        "MOONRAKER_URL": "http://10.0.16.111:80",
+        "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/1502152505944178688/s9MUfI43ycBhhuGgUbDqocA4pkFsvzDYiR_MGQx27jnlOT8A-G-cVpx40mL6285poWk4"
+      }
+    }
+  ]
+}
