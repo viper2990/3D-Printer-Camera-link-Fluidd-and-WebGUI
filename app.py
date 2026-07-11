@@ -965,23 +965,38 @@ def test_teams():
 
 @app.route("/test_print_started", methods=["POST"])
 def test_print_started():
-    """Send a test print started notification to verify functionality."""
+    """Send a test print started notification using the current print's real data."""
     if not notifier.enabled:
         return jsonify({"ok": False, "reason": "Discord webhook not configured"}), 503
 
-    filename = "test_print.gcode"
-    estimated_s = 5400  # 1.5 hours
-    message = f"Print started: {filename}\nEstimated time: {_format_time(estimated_s)}"
-    
-    ok = notifier.send(
+    print_info = moonraker.get_state() or {}
+    filename = print_info.get("filename") or "test_print.gcode"
+    estimated_s = print_info.get("estimated_s", 5400)
+    time_str = _format_time(estimated_s) if estimated_s > 0 else ""
+
+    message = f"Print started: {filename}"
+    if time_str:
+        message += f"\nEstimated time: {time_str}"
+
+    teams_facts = [{"title": "File", "value": filename}]
+    if time_str:
+        teams_facts.append({"title": "Estimated Time", "value": time_str})
+
+    preview_url = print_info.get("preview_url", "")
+    preview_image = _fetch_preview_image(preview_url)
+    preview_image = _scale_image(preview_image, scale=3.0)
+
+    msg_id = _send_notification(
         title="Print Started",
         message=message,
+        image_bytes=preview_image,
         color=0x00FF00,
-        emoji=":printer:"
+        emoji=":printer:",
+        facts=teams_facts,
     )
-    if not ok:
-        return jsonify({"ok": False, "reason": "Print started notification failed"}), 502
-    return jsonify({"ok": True})
+    if msg_id is None and not preview_image:
+        return jsonify({"ok": False, "reason": "Notification failed or no preview image available"}), 502
+    return jsonify({"ok": True, "has_image": preview_image is not None})
 
 
 @app.route("/snapshot.jpg")

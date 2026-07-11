@@ -170,10 +170,13 @@ class MoonrakerClient:
 
     def _get_preview_url(self, metadata: dict) -> str:
         thumbnails = metadata.get("thumbnails", [])
-        if isinstance(thumbnails, list) and thumbnails:
-            thumb_path = thumbnails[0].get("relative_path", "")
-            if thumb_path:
-                return f"/server/files/gcodes/{quote(thumb_path, safe='/')}"
+        if not isinstance(thumbnails, list) or not thumbnails:
+            return ""
+        # Pick the largest thumbnail to avoid a blurry upscale.
+        best = max(thumbnails, key=lambda t: t.get("width", 0) * t.get("height", 0))
+        thumb_path = best.get("relative_path", "")
+        if thumb_path:
+            return f"/server/files/gcodes/{quote(thumb_path, safe='/')}"
         return ""
 
     # ------------------------------------------------------------------
